@@ -8,7 +8,7 @@ setup(
     description='A wrapper for the Molaris REST API https://deep-index.moralis.io/api-docs/#/',
     long_description=open('README.md').read(),
     install_requires=[],
-    url='REPOSITORY_URL',
+    url='https://github.com/bberg/MoralisPy',
     author='Ben Berg',
     author_email='benberg00@gmail.com'
 )
