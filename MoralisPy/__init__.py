@@ -1,1 +1,1 @@
-from MoralisPy.api import MoralisApiHandler
+from MoralisPy.api import MoralisPy

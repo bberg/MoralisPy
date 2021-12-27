@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name='MoralisPy',
-    version='0.1',
+    version='1.0',
     packages=find_packages(exclude=['tests*']),
-    license='none',
-    description='A wrapper for the Molaris REST API https://deep-index.moralis.io/api-docs/#/',
+    license='GNU General Public License v3.0',
+    description='A python wrapper for the Molaris REST API',
     long_description=open('README.md').read(),
     install_requires=[],
     url='https://github.com/bberg/MoralisPy',
