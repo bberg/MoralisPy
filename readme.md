@@ -1,7 +1,7 @@
 # Introduction
 A simple Python wrapper for the Molaris REST API. Useful for getting ERC-20 token prices, getting general token information and getting information about all tokens in a wallet. 
 
-##Molaris
+## Molaris
 Use requires a Molaris API key which is currently available with the free Molaris service tier. 
 - https://moralis.io/
 - https://deep-index.moralis.io/api-docs/#/
