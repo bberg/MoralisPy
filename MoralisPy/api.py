@@ -1,8 +1,9 @@
 import requests
-import pandas as pd
+import datetime
+from pprint import pprint as pp
 
 
-class MoralisApiHandler:
+class MoralisPy:
     def __init__(self):
         self.url_base = 'https://deep-index.moralis.io/api/v2/'
         self.api_key = None
@@ -21,8 +22,6 @@ class MoralisApiHandler:
         else:
             return False
 
-    # Available values : eth, 0x1, ropsten, 0x3, rinkeby, 0x4, goerli, 0x5, kovan, 0x2a, polygon, 0x89, mumbai, 0x13881, bsc, 0x38, bsc testnet, 0x61, avalanche, 0xa86a, avalanche testnet, 0xa869, fantom, 0xfa
-    # https://admin.moralis.io/web3Api#
     def get_native_balance(self, wallet_address, chain):
         endpoint = wallet_address + "/balance?chain=" + chain
         return float(self.api_request(endpoint)['balance'])
@@ -49,37 +48,59 @@ class MoralisApiHandler:
         token_amount = (native_price) * token_amount
         return token_amount
 
-    def get_total_token_assets(self, wallet_address, chains, tokens_to_exclude=None):
+    def get_token_metadata(self, token_address, chain):
+        metadata = self.api_request("/erc20/metadata?chain="+chain+"&addresses="+token_address)[0]
+        return metadata
+
+    def get_total_token_assets(self, wallet_address, chains, tokens_to_exclude=None, print_debug= False):
         if tokens_to_exclude is None:
             tokens_to_exclude = ['KK8.io']
+        # "native assets" are the chain's native token
         native_token_assets = []
-        erc20_token_assets = []
-        erc20_assets = 0
+
+        erc20_token_assets_detail_list = []
+        erc20_assets_sum = 0
         for chain in chains:
             native_balance = self.get_native_balance(wallet_address, chain)
-            print(chain+"  "+str(native_balance))
+            if print_debug:
+                print(chain+"  "+str(native_balance))
             native_token_assets.append({"chain": chain, "native_balance": native_balance})
             tokens = self.get_tokens_for_wallet(wallet_address, chain=chain)
             for token in tokens:
-                token_price = self.get_token_price(token['token_address'], chain=chain)
-                token_quantity = float(token['balance'])*(10**-float(token['decimals']))
-                holdings_value = token_quantity*float(token_price['usdPrice'])
-                print(chain+"  "+token['symbol']+"  quantity:"+str(token_quantity)+" price:$"+str(token_price['usdPrice'])+" extended value:$"+str(holdings_value)+"  "+token['token_address'])
-                erc20_token_assets.append({
-                    "chain": chain
-                    ,"symbol": token['symbol']
-                    ,"token_address": token['token_address']
-                    ,"price": token_price
-                    ,"quantity": token_quantity
-                    ,"holdings_value":holdings_value
-                    ,"detail_object": token
-                })
+                token_price_object = self.get_token_price(token['token_address'], chain=chain)
+                if not token_price_object:
+                    if print_debug:
+                        print("Error getting token information for: ")
+                        pp(token)
+                else:
+                    token_quantity = float(token['balance'])*(10**-float(token['decimals']))
+                    holdings_value = token_quantity*float(token_price_object['usdPrice'])
+                    native_price = float(token_price_object['nativePrice']['value'])*(10**-float(token_price_object['nativePrice']['decimals']))
+                    native_value = token_quantity*native_price
+                    if print_debug:
+                        print(chain+"  "+token['symbol']+"  quantity:"+str(token_quantity)+" price:$"+str(token_price_object['usdPrice'])+" extended value:$"+str(holdings_value)+"  "+token['token_address'])
+                    erc20_token_assets_detail_list.append({
+                        "datetime": datetime.datetime.now()
+                        , "chain": chain
+                        , "symbol": token['symbol']
+                        , "token_address": token['token_address']
+                        , "quantity": token_quantity
+                        , "usd_price": token_price_object['usdPrice']
+                        , "holdings_value_usd": holdings_value
+                        , "native_price": native_price
+                        , "holdings_value_native": native_value
+                        , "price_exchange_address": token_price_object['exchangeAddress']
+                        , "price_exchange_name": token_price_object['exchangeName']
+                        , "native_price_decimals": token_price_object['nativePrice']['decimals']
+                        , "native_price_name": token_price_object['nativePrice']['name']
+                        , "native_price_symbol": token_price_object['nativePrice']['symbol']
+                        , "native_price_value_raw": int(token_price_object['nativePrice']['value'])
+                        , "price_object": token_price_object
+                        , "detail_object": token
+                    })
 
                 if token['symbol'] not in tokens_to_exclude:
-                    erc20_assets += float(holdings_value)
+                    erc20_assets_sum += float(holdings_value)
 
-        native_token_assets_df = pd.DataFrame(native_token_assets)
-        erc20_token_assets_df = pd.DataFrame(erc20_token_assets)
-
-        print("total ERC-20 token assets: ", erc20_assets)
-        return erc20_assets, native_token_assets_df, erc20_token_assets_df
+        print("total ERC-20 token assets: ", erc20_assets_sum)
+        return erc20_assets_sum, native_token_assets, erc20_token_assets_detail_list

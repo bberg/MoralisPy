@@ -3,7 +3,7 @@ import pytest
 import os
 import json
 from pprint import pprint as pp
-from MoralisPy.api import MoralisApiHandler
+from MoralisPy.api import MoralisPy
 
 # setup
 configFilePath = os.path.abspath('') + '/test-config.json'
@@ -45,7 +45,7 @@ for i in test_token_chain_combos_input:
 
 @pytest.fixture
 def setup():
-    setup = MoralisApiHandler()
+    setup = MoralisPy()
     return setup
 
 
@@ -60,14 +60,14 @@ def test_get_url_base(setup):
 
 @pytest.fixture
 def moralis():
-    moralis = MoralisApiHandler()
+    moralis = MoralisPy()
     moralis.set_api_key(api_key)
     return moralis
 
 
 @pytest.fixture
 def wallet_address():
-    return '0xF5D77E444B1f8A9Ce6d78fF593D539242FE905D0'
+    return obj['wallet_address']
 
 @pytest.fixture
 def all_chains():
@@ -124,6 +124,10 @@ def test_native_token_conversion(moralis, token, chain):
 def test_get_total_token_assets(moralis,wallet_address,all_chains):
     total_token_assets = moralis.get_total_token_assets(wallet_address, all_chains)
     assert type(total_token_assets[0]) == float
-    assert type(total_token_assets[1]) == pd.DataFrame
-    assert type(total_token_assets[1]) == pd.DataFrame
+    assert type(total_token_assets[1]) == list
+    assert type(total_token_assets[1]) == list
 
+@pytest.mark.parametrize("token,chain", test_token_chain_combos)
+def test_get_token_metadata(moralis, token, chain):
+    token_metadata = moralis.get_token_metadata(token, chain)
+    assert  type(token_metadata) == dict
