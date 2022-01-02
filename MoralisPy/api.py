@@ -18,7 +18,8 @@ class MoralisPy:
         headers = {
             "x-api-key": self.api_key
         }
-        Merge(headers_to_add, headers)
+        if headers_to_add:
+            Merge(headers_to_add, headers)
         pp(headers)
         response = requests.request(url=self.url_base + endpoint, method=method, headers=headers, data=data )
         if response.status_code == 200:
