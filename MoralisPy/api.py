@@ -2,6 +2,8 @@ import requests
 import datetime
 from pprint import pprint as pp
 
+def Merge(dict1, dict2):
+    return(dict2.update(dict1))
 
 class MoralisPy:
     def __init__(self):
@@ -11,20 +13,29 @@ class MoralisPy:
     def set_api_key(self, api_key):
         self.api_key = api_key
 
-    def api_request(self, endpoint, method="GET"):
+    def api_request(self, endpoint, method="GET",data=None, headers_to_add=None):
+
         headers = {
             "x-api-key": self.api_key
         }
-        response = requests.request(url=self.url_base + endpoint, method=method, headers=headers)
+        Merge(headers_to_add, headers)
+        pp(headers)
+        response = requests.request(url=self.url_base + endpoint, method=method, headers=headers, data=data )
         if response.status_code == 200:
             response_object = response.json()
+            # response_object['status_code'] = 200
             return response_object
         else:
-            return False
+            # response_object = {}
+            # response_object['status_code'] = response.status_code
+            pp(vars(response))
+            pp(vars(response.request))
+            return response.json()
 
     def get_native_balance(self, wallet_address, chain):
         endpoint = wallet_address + "/balance?chain=" + chain
-        return float(self.api_request(endpoint)['balance'])
+        response = self.api_request(endpoint)
+        return float(response['balance'])
 
     def get_tokens_for_wallet(self, wallet_address, chain):
         endpoint = wallet_address + "/erc20?chain=" + chain
@@ -61,11 +72,18 @@ class MoralisPy:
         erc20_token_assets_detail_list = []
         erc20_assets_sum = 0
         for chain in chains:
-            native_balance = self.get_native_balance(wallet_address, chain)
-            if print_debug:
-                print(chain+"  "+str(native_balance))
-            native_token_assets.append({"chain": chain, "native_balance": native_balance})
+
+            try:
+                native_balance = self.get_native_balance(wallet_address, chain)
+                if print_debug:
+                    print(chain+"  "+str(native_balance))
+                native_token_assets.append({"chain": chain, "native_balance": native_balance})
+            except:
+                print("error getting native balance for: "+chain)
+                native_balance = 0
+
             tokens = self.get_tokens_for_wallet(wallet_address, chain=chain)
+            print(tokens)
             for token in tokens:
                 token_price_object = self.get_token_price(token['token_address'], chain=chain)
                 if not token_price_object:
@@ -104,3 +122,11 @@ class MoralisPy:
 
         print("total ERC-20 token assets: ", erc20_assets_sum)
         return erc20_assets_sum, native_token_assets, erc20_token_assets_detail_list
+
+    def ipfs_uploadFolder(self,data):
+        endpoint = 'ipfs/uploadFolder'
+        headers_to_add = {"Content-Type": "application/json",
+                "accept": "application/json"}
+        resp = self.api_request(endpoint,method='POST',data=data,headers_to_add=headers_to_add)
+        pp(resp)
+        return resp
